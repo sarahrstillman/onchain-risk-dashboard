@@ -5,14 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv("src/config/.env")
 
-API_KEY = os.getenv("ETHERSCAN_API_KEY")
-
-import os
-import requests
-import pandas as pd
-
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY")
-
 
 def fetch_wallet_txs(address: str) -> pd.DataFrame:
     if not ETHERSCAN_API_KEY:
