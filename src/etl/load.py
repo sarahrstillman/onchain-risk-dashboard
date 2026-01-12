@@ -36,4 +36,6 @@ def normalize(df, wallet):
     })
 
 def load_transactions(df):
+    if df.empty:
+        return
     df.to_sql("transactions", engine, if_exists="append", index=False)

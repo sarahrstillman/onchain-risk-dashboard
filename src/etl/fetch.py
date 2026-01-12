@@ -24,7 +24,7 @@ def fetch_wallet_txs(address: str) -> pd.DataFrame:
         "page": 1,
         # docs default offset=1, but we can ask for more per page:
         "offset": 10000,               # up to 10k txs per page
-        "sort": "asc",                 # oldest → newest
+        "sort": "desc",                # newest → oldest
     }
 
     resp = requests.get(url, params=params, timeout=15)
@@ -33,6 +33,8 @@ def fetch_wallet_txs(address: str) -> pd.DataFrame:
     print("DEBUG Etherscan response:", data)
 
     if data.get("status") != "1":
+        if data.get("message") == "No transactions found":
+            return pd.DataFrame([])
         raise RuntimeError(
             f"Etherscan error: {data.get('message')} | result={data.get('result')}"
         )
