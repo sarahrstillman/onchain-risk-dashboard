@@ -26,8 +26,6 @@ def load_entities(csv_path: str) -> int:
     records: List[Tuple[str, str, str]] = list(
         df[["address", "label", "entity_type"]].itertuples(index=False, name=None)
     )
-    addresses = [record[0] for record in records]
-
     with engine.begin() as conn:
         conn.exec_driver_sql("DELETE FROM entities")
         if records:
@@ -35,11 +33,15 @@ def load_entities(csv_path: str) -> int:
                 "INSERT INTO entities (address, label, entity_type) VALUES (?, ?, ?)",
                 records,
             )
+
+    return len(records)
+
+
+def reset_analysis_tables() -> None:
+    with engine.begin() as conn:
         conn.exec_driver_sql("DELETE FROM risk_metrics")
         conn.exec_driver_sql("DELETE FROM daily_metrics")
         conn.exec_driver_sql("DELETE FROM transactions")
-
-    return len(records)
 
 
 def list_entities() -> List[dict]:

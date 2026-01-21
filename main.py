@@ -2,9 +2,11 @@ import argparse
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import pandas as pd
+
 from analytics.metrics import build_daily_metrics, summarize_flow_metrics, write_daily_metrics
 from analytics.risk import build_risk_metrics, write_risk_metrics
-from src.etl.entities import list_entities, load_entities
+from src.etl.entities import list_entities, load_entities, reset_analysis_tables
 from src.etl.enrich import add_contract_flags
 from src.etl.fetch import fetch_token_transfers, fetch_wallet_txs
 from src.etl.load import load_transactions, normalize
@@ -16,10 +18,10 @@ def ingest_wallet(
     max_transfers: int = 1000,
     skip_stablecoins: bool = False,
     since_days: int = 0,
-) -> None:
+) -> pd.DataFrame:
     entity_type = (entity_type or "").lower()
     if skip_stablecoins and entity_type in {"stablecoin", "contract"}:
-        return
+        return pd.DataFrame()
     if entity_type in {"stablecoin", "contract"}:
         raw = fetch_token_transfers(
             wallet_address,
@@ -34,7 +36,7 @@ def ingest_wallet(
         )
     normalized = normalize(raw, wallet_address)
     enriched = add_contract_flags(normalized)
-    load_transactions(enriched)
+    return enriched
 
 
 def run(
@@ -50,26 +52,31 @@ def run(
 ) -> None:
     load_entities(entities_csv)
 
+    collected = []
     if wallet_address:
-        ingest_wallet(
+        df = ingest_wallet(
             wallet_address,
             max_transfers=max_transfers,
             skip_stablecoins=skip_stablecoins,
             since_days=since_days,
         )
+        if not df.empty:
+            collected.append(df)
     elif ingest_entities:
         entities = list_entities()
         workers = int(os.getenv("INGEST_WORKERS", "4"))
         workers = max(1, min(workers, len(entities)))
         if workers == 1:
             for entity in entities:
-                ingest_wallet(
+                df = ingest_wallet(
                     entity["address"],
                     entity.get("entity_type", ""),
                     max_transfers=max_transfers,
                     skip_stablecoins=skip_stablecoins,
                     since_days=since_days,
                 )
+                if not df.empty:
+                    collected.append(df)
         else:
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 futures = {
@@ -86,9 +93,18 @@ def run(
                 for future in as_completed(futures):
                     entity = futures[future]
                     try:
-                        future.result()
+                        df = future.result()
+                        if df is not None and not df.empty:
+                            collected.append(df)
                     except Exception as exc:
                         print(f"Failed to ingest {entity.get('label') or entity['address']}: {exc}")
+
+    if collected:
+        reset_analysis_tables()
+        for df in collected:
+            load_transactions(df)
+    else:
+        print("No new data fetched; keeping existing data.")
 
     metrics = None
     if not skip_risk:
