@@ -14,9 +14,6 @@ def load_entities(csv_path: str) -> int:
         return 0
 
     df = pd.read_csv(csv_path)
-    if df.empty:
-        return 0
-
     required = {"address", "label", "entity_type"}
     missing = required - set(df.columns)
     if missing:
@@ -29,13 +26,25 @@ def load_entities(csv_path: str) -> int:
     records: List[Tuple[str, str, str]] = list(
         df[["address", "label", "entity_type"]].itertuples(index=False, name=None)
     )
-    if not records:
-        return 0
+    addresses = [record[0] for record in records]
 
     with engine.begin() as conn:
-        conn.exec_driver_sql(
-            "INSERT OR IGNORE INTO entities (address, label, entity_type) VALUES (?, ?, ?)",
-            records,
-        )
+        conn.exec_driver_sql("DELETE FROM entities")
+        if records:
+            conn.exec_driver_sql(
+                "INSERT INTO entities (address, label, entity_type) VALUES (?, ?, ?)",
+                records,
+            )
+        conn.exec_driver_sql("DELETE FROM risk_metrics")
+        conn.exec_driver_sql("DELETE FROM daily_metrics")
+        conn.exec_driver_sql("DELETE FROM transactions")
 
     return len(records)
+
+
+def list_entities() -> List[dict]:
+    query = "SELECT address, entity_type, label FROM entities"
+    df = pd.read_sql(query, engine)
+    if df.empty:
+        return []
+    return df.dropna(subset=["address"]).to_dict(orient="records")

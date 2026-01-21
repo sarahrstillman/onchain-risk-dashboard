@@ -1,5 +1,6 @@
 import os
-from typing import Dict, Optional
+from functools import lru_cache
+from typing import Optional
 
 import pandas as pd
 from web3 import Web3
@@ -16,6 +17,17 @@ def is_contract(address):
     code = w3.eth.get_code(Web3.to_checksum_address(address))
     return code != b""
 
+@lru_cache(maxsize=10000)
+def _is_contract_cached(address_lower: str):
+    if not w3:
+        return None
+    if not address_lower:
+        return None
+    try:
+        return is_contract(address_lower)
+    except ValueError:
+        return None
+
 def add_contract_flags(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
@@ -26,19 +38,10 @@ def add_contract_flags(df: pd.DataFrame) -> pd.DataFrame:
         df["is_contract_interaction"] = None
         return df
 
-    cache: Dict[str, Optional[bool]] = {}
-
-    def _is_contract_cached(address: Optional[str]) -> Optional[bool]:
+    def _lookup(address: Optional[str]) -> Optional[bool]:
         if not address:
             return None
-        key = address.lower()
-        if key in cache:
-            return cache[key]
-        try:
-            cache[key] = is_contract(address)
-        except ValueError:
-            cache[key] = None
-        return cache[key]
+        return _is_contract_cached(address.lower())
 
-    df["is_contract_interaction"] = df["to_address"].map(_is_contract_cached)
+    df["is_contract_interaction"] = df["to_address"].map(_lookup)
     return df

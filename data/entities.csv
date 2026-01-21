@@ -1,9 +1,2 @@
 address,label,entity_type
-0x1985EA6E9c68E1C272d8209f3B478AC2Fdb25c87, Coinbase Centralized Exchange, hot wallet
-0xD34EA7278e6BD48DefE656bbE263aEf11101469c, Coinbase Centralized Exchange, hot wallet
-0x8894E0a0c962CB723c1976a4421c95949bE2D4E3, Binance Centralized Exchange, hot wallet
-0xaA8ba7D4611437141192e7ceCed531Bc0A133efb, Kraken Centralized Exchange, hot wallet
-0x05ff6964D21e5dAE3b1010D5AE0465b3c450F381, Kraken Centralized Exchange, hot wallet
-0xA9Ac43f5b5e38155A288d1A01D2cbc4478E14573, OKX Centralized Exchange, hot wallet
-0x559432E18b281731c054cD703D4B49872BE4ed53, OKX Centralized Exchange, hot wallet
-0x77134cbC06cB00b66F4c7e623D5fdBF6777635EC, Bitfinex Centralized Exchange, hot wallet
+0xA9D1e08C7793af67e9d92fe308d5697FB81d3E43, Coinbase Centralized Exchange, hot wallet

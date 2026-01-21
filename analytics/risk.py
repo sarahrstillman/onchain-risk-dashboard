@@ -17,7 +17,10 @@ def get_metrics():
           AS unique_counterparties_30d,
       AVG(value_eth) AS avg_tx_size
     FROM transactions
+    JOIN entities
+      ON LOWER(transactions.wallet_address) = entities.address
     WHERE timestamp >= datetime('now', '-30 days')
+      AND LOWER(entities.entity_type) NOT IN ('stablecoin', 'contract', 'bridge', 'erc20')
     GROUP BY wallet_address;
     """
     return pd.read_sql(query, engine)
