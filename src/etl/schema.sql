@@ -27,8 +27,12 @@ CREATE TABLE IF NOT EXISTS risk_metrics (
     tx_count_30d INTEGER,
     volume_30d REAL,
     unique_counterparties_30d INTEGER,
+    contract_interactions_30d INTEGER,
     avg_tx_size REAL,
-    risk_score REAL
+    risk_score REAL,
+    reason_velocity REAL,
+    reason_new_counterparties REAL,
+    reason_contract_interactions REAL
 );
 
 CREATE TABLE IF NOT EXISTS risk_events (
@@ -56,4 +60,14 @@ CREATE TABLE IF NOT EXISTS daily_metrics (
     entity_label TEXT,
     asset_symbol TEXT,
     value REAL
+);
+
+CREATE TABLE IF NOT EXISTS audit_table (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address TEXT,
+    as_of_date TEXT,
+    risk_score REAL,
+    top_reasons TEXT,
+    pipeline_version TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );

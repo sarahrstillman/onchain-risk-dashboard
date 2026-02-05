@@ -6,6 +6,7 @@ import pandas as pd
 
 from analytics.metrics import build_daily_metrics, summarize_flow_metrics, write_daily_metrics
 from analytics.risk import build_risk_metrics, write_risk_metrics
+from analytics.case_report import generate_case_report
 from src.etl.entities import list_entities, load_entities, reset_analysis_tables
 from src.etl.enrich import add_contract_flags
 from src.etl.fetch import fetch_token_transfers, fetch_wallet_txs
@@ -49,6 +50,8 @@ def run(
     skip_stablecoins: bool,
     since_days: int,
     skip_risk: bool,
+    case_report: bool,
+    case_report_path: str,
 ) -> None:
     load_entities(entities_csv)
 
@@ -130,6 +133,13 @@ def run(
             print("Hot Wallet Risk Scores")
             print(top[columns].to_string(index=False))
 
+    if case_report:
+        if not wallet_address:
+            print("Case report generation requires a wallet address.")
+        else:
+            output_path = generate_case_report(wallet_address, case_report_path or None)
+            print(f"Case report saved to {output_path}")
+
     # Exchange flow output removed to keep results focused.
 
 def main() -> None:
@@ -174,6 +184,16 @@ def main() -> None:
         action="store_true",
         help="Skip risk scoring and only emit flow metrics.",
     )
+    parser.add_argument(
+        "--case-report",
+        action="store_true",
+        help="Generate a case report for the provided wallet.",
+    )
+    parser.add_argument(
+        "--case-report-path",
+        default="",
+        help="Optional output path for the case report markdown.",
+    )
     args = parser.parse_args()
 
     if not args.wallet_address and not args.ingest_entities:
@@ -189,8 +209,11 @@ def main() -> None:
         args.skip_stablecoins,
         args.since_days,
         args.skip_risk,
+        args.case_report,
+        args.case_report_path,
     )
 
 
 if __name__ == "__main__":
     main()
+
